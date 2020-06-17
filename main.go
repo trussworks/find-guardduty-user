@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -14,7 +15,6 @@ import (
 	awssession "github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudtrail"
 	"github.com/aws/aws-sdk-go/service/guardduty"
-	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -38,7 +38,7 @@ type FindingDetail struct {
 func (fd *FindingDetail) PrintJSON(logger *log.Logger) error {
 	fdJSON, err := json.Marshal(fd)
 	if err != nil {
-		return errors.Wrap(err, "Unable to marshal FindingDetail to JSON")
+		return fmt.Errorf("Unable to marshal FindingDetail to JSON: %w", err)
 
 	}
 	logger.Println(string(fdJSON))
@@ -122,11 +122,11 @@ func checkRegion(v *viper.Viper) error {
 
 	r := v.GetString(AWSGuardDutyRegionFlag)
 	if len(r) == 0 {
-		return errors.Wrap(&errInvalidRegion{Region: r}, fmt.Sprintf("%s is invalid", AWSGuardDutyRegionFlag))
+		return fmt.Errorf("%s is invalid: %w", AWSGuardDutyRegionFlag, &errInvalidRegion{Region: r})
 	}
 
 	if _, ok := regions[r]; !ok {
-		return errors.Wrap(&errInvalidRegion{Region: r}, fmt.Sprintf("%s is invalid", AWSGuardDutyRegionFlag))
+		return fmt.Errorf("%s is invalid: %w", AWSGuardDutyRegionFlag, &errInvalidRegion{Region: r})
 	}
 
 	return nil
@@ -138,7 +138,7 @@ func checkOutput(v *viper.Viper) error {
 
 	o := v.GetString(OutputFlag)
 	if _, ok := outputs[o]; !ok {
-		return errors.Wrap(&errInvalidOutput{Output: o}, fmt.Sprintf("%s is invalid", OutputFlag))
+		return fmt.Errorf("%s is invalid: %w", OutputFlag, &errInvalidOutput{Output: o})
 	}
 
 	return nil
@@ -148,12 +148,12 @@ func checkConfig(v *viper.Viper) error {
 
 	err := checkRegion(v)
 	if err != nil {
-		return errors.Wrap(err, "Region check failed")
+		return fmt.Errorf("Region check failed: %w", err)
 	}
 
 	err = checkOutput(v)
 	if err != nil {
-		return errors.Wrap(err, "Output check failed")
+		return fmt.Errorf("Output check failed: %w", err)
 	}
 
 	return nil
@@ -172,7 +172,7 @@ func LookupEvent(key *string, value *string, serviceCloudTrail *cloudtrail.Cloud
 	}
 	events, err := serviceCloudTrail.LookupEvents(&lookupEventsInput)
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("LookupEvents failed with Attribute Key '%s' and Attribute Value '%s'", *key, *value))
+		return nil, fmt.Errorf("LookupEvents failed with Attribute Key '%s' and Attribute Value '%s': %w", *key, *value, err)
 	}
 	if len(events.Events) != 1 {
 		return nil, fmt.Errorf("Expected exactly one event, got %d", len(events.Events))
@@ -184,7 +184,7 @@ func LookupEvent(key *string, value *string, serviceCloudTrail *cloudtrail.Cloud
 func GetRoleAndUser(key *string, value *string, serviceCloudTrail *cloudtrail.CloudTrail) (*string, *string, error) {
 	event, err := LookupEvent(key, value, serviceCloudTrail)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, fmt.Sprintf("Unable to find CloudTrail event for %s %s", *key, *value))
+		return nil, nil, fmt.Errorf("Unable to find CloudTrail event for %s %s: %w", *key, *value, err)
 	}
 
 	// The CloudTrailEvent is a JSON object of unknown format
@@ -192,7 +192,7 @@ func GetRoleAndUser(key *string, value *string, serviceCloudTrail *cloudtrail.Cl
 	var data map[string]interface{}
 	err = json.Unmarshal([]byte(dataStr), &data)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "Unable to unmarshal JSON data from CloudTrail event")
+		return nil, nil, fmt.Errorf("Unable to unmarshal JSON data from CloudTrail event: %w", err)
 	}
 	userIdentity, ok := data["userIdentity"].(map[string]interface{})
 	if !ok {
@@ -211,7 +211,7 @@ func GetUser(roleArn *string, serviceCloudTrail *cloudtrail.CloudTrail) (*string
 	key := "ResourceName"
 	event, err := LookupEvent(&key, roleArn, serviceCloudTrail)
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("Unable to find CloudTrail event for role arn %s", *roleArn))
+		return nil, fmt.Errorf("Unable to find CloudTrail event for role arn %s: %w", *roleArn, err)
 	}
 
 	// The CloudTrailEvent is a JSON object of unknown format
@@ -276,7 +276,7 @@ func main() {
 	creds := credentials.NewEnvCredentials()
 	_, credsGetErr := creds.Get()
 	if credsGetErr != nil {
-		logger.Fatal(errors.Wrap(credsGetErr, "error creating aws config").Error())
+		logger.Fatal(fmt.Errorf("error creating aws config: %w", credsGetErr))
 	}
 	// we have creds for envars return them
 	awsConfig.CredentialsChainVerboseErrors = aws.Bool(verbose)
@@ -284,7 +284,7 @@ func main() {
 
 	session, errorSession := awssession.NewSession(awsConfig)
 	if errorSession != nil {
-		logger.Fatal(errors.Wrap(errorSession, "error creating aws session").Error())
+		logger.Fatal(fmt.Errorf("error creating aws session: %w", errorSession))
 	}
 
 	// GuardDuty has the findings
@@ -297,7 +297,7 @@ func main() {
 	listDetectorsInput := guardduty.ListDetectorsInput{}
 	detectors, err := serviceGuardDuty.ListDetectors(&listDetectorsInput)
 	if err != nil {
-		logger.Fatal(errors.Wrap(err, "Unable to list Guard Duty detectors"))
+		logger.Fatal(fmt.Errorf("Unable to list Guard Duty detectors: %w", err))
 	}
 
 	// Walk through detectors
@@ -328,7 +328,7 @@ func main() {
 
 			findingList, err := serviceGuardDuty.ListFindings(&listFindingsInput)
 			if err != nil {
-				logger.Println(errors.Wrap(err, "Unable to list Guard Duty findings"))
+				logger.Println(fmt.Errorf("Unable to list Guard Duty findings: %w", err))
 				continue
 			}
 
@@ -345,7 +345,7 @@ func main() {
 			}
 			findings, err := serviceGuardDuty.GetFindings(&getFindingsInput)
 			if err != nil {
-				logger.Println(errors.Wrap(err, "Unable to retrieve Guard Duty findings"))
+				logger.Println(fmt.Errorf("Unable to retrieve Guard Duty findings: %w", err))
 			}
 
 			// Walk through each finding
@@ -389,7 +389,7 @@ func main() {
 					key := "AccessKeyId"
 					roleArn, username, err = GetRoleAndUser(&key, fd.AccessKeyID, serviceCloudTrail)
 					if err != nil {
-						logger.Println(errors.Wrap(err, "Unable to find role arn and username from access key in finding"))
+						logger.Println(fmt.Errorf("Unable to find role arn and username from access key in finding: %w", err))
 						continue
 					}
 				} else if fd.PrincipalID != nil && *fd.PrincipalID != "" && *fd.PrincipalID != "GeneratedFindingPrincipalId" {
@@ -397,7 +397,7 @@ func main() {
 					key := "ResourceName"
 					roleArn, username, err = GetRoleAndUser(&key, fd.PrincipalID, serviceCloudTrail)
 					if err != nil {
-						logger.Println(errors.Wrap(err, "Unable to find role arn and username from principal ID in finding"))
+						logger.Println(fmt.Errorf("Unable to find role arn and username from principal ID in finding: %w", err))
 						continue
 					}
 				} else {
@@ -414,7 +414,7 @@ func main() {
 					var err error
 					username, err = GetUser(roleArn, serviceCloudTrail)
 					if err != nil {
-						logger.Println(errors.Wrap(err, "Unable to find role username from role arn"))
+						logger.Println(fmt.Errorf("Unable to find role username from role arn: %w", err))
 						continue
 					}
 				}
@@ -424,7 +424,7 @@ func main() {
 				if output := v.GetString(OutputFlag); output == "json" {
 					err := fd.PrintJSON(logger)
 					if err != nil {
-						logger.Println(errors.Wrap(err, "Unable to marshal finding detail to JSON"))
+						logger.Println(fmt.Errorf("Unable to marshal finding detail to JSON: %w", err))
 					}
 				} else {
 					fd.Print(logger)
