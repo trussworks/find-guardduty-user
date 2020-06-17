@@ -91,10 +91,12 @@ func (e *errInvalidOutput) Error() string {
 }
 
 const (
-	// AWSRegionFlag is the generic AWS Region Flag
-	AWSRegionFlag string = "aws-region"
 	// AWSGuardDutyRegionFlag is the AWS GuardDuty Region Flag
 	AWSGuardDutyRegionFlag = "aws-guardduty-region"
+	// ArchivedFlag is the Archive Flag
+	ArchivedFlag = "archived"
+	// OutputFlag is the Output Flag
+	OutputFlag = "output"
 	// VerboseFlag is the Verbose Flag
 	VerboseFlag string = "debug-logging"
 )
@@ -102,8 +104,8 @@ const (
 func initFlags(flag *pflag.FlagSet) {
 
 	flag.String(AWSGuardDutyRegionFlag, endpoints.UsWest2RegionID, "AWS region used inspecting guardduty")
-	flag.BoolP("archived", "a", false, "Show archived findings instead of current findings")
-	flag.StringP("output", "o", "json", "Whether to print output as 'text' or 'json'")
+	flag.BoolP(ArchivedFlag, "a", false, "Show archived findings instead of current findings")
+	flag.StringP(OutputFlag, "o", "json", "Whether to print output as 'text' or 'json'")
 
 	// Verbose
 	flag.BoolP(VerboseFlag, "v", false, "log messages at the debug level.")
@@ -134,9 +136,9 @@ func checkOutput(v *viper.Viper) error {
 
 	outputs := map[string]string{"text": "text", "json": "json"}
 
-	o := v.GetString("output")
+	o := v.GetString(OutputFlag)
 	if _, ok := outputs[o]; !ok {
-		return errors.Wrap(&errInvalidOutput{Output: o}, fmt.Sprintf("%s is invalid", "output"))
+		return errors.Wrap(&errInvalidOutput{Output: o}, fmt.Sprintf("%s is invalid", OutputFlag))
 	}
 
 	return nil
@@ -264,7 +266,7 @@ func main() {
 	}
 
 	// Get credentials from environment
-	awsRegion := v.GetString(AWSRegionFlag)
+	awsRegion := v.GetString(AWSGuardDutyRegionFlag)
 
 	awsConfig := &aws.Config{
 		Region: aws.String(awsRegion),
@@ -307,7 +309,7 @@ func main() {
 		for {
 			// Define the service condition to list findings
 			archived := "false"
-			if v.GetBool("archived") {
+			if v.GetBool(ArchivedFlag) {
 				archived = "true"
 			}
 			serviceCondition := guardduty.Condition{}
@@ -419,7 +421,7 @@ func main() {
 				fd.Username = username
 
 				// Print output in desired format
-				if output := v.GetString("output"); output == "json" {
+				if output := v.GetString(OutputFlag); output == "json" {
 					err := fd.PrintJSON(logger)
 					if err != nil {
 						logger.Println(errors.Wrap(err, "Unable to marshal finding detail to JSON"))
