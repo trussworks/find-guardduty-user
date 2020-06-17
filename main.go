@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	awssession "github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudtrail"
@@ -26,8 +27,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-
-	"github.com/transcom/mymove/pkg/cli"
 )
 
 // FindingDetail captures the data from a guard duty finding
@@ -101,17 +100,23 @@ func (e *errInvalidOutput) Error() string {
 	return fmt.Sprintf("invalid output %s", e.Output)
 }
 
+const (
+	// AWSRegionFlag is the generic AWS Region Flag
+	AWSRegionFlag string = "aws-region"
+	// AWSGuardDutyRegionFlag is the AWS GuardDuty Region Flag
+	AWSGuardDutyRegionFlag = "aws-guardduty-region"
+	// VerboseFlag is the Verbose Flag
+	VerboseFlag string = "debug-logging"
+)
+
 func initFlags(flag *pflag.FlagSet) {
 
-	// aws-vault
-	cli.InitVaultFlags(flag)
-
-	flag.String("aws-guardduty-region", "us-west-2", "AWS region used inspecting guardduty")
+	flag.String(AWSGuardDutyRegionFlag, endpoints.UsWest2RegionID, "AWS region used inspecting guardduty")
 	flag.BoolP("archived", "a", false, "Show archived findings instead of current findings")
 	flag.StringP("output", "o", "json", "Whether to print output as 'text' or 'json'")
 
 	// Verbose
-	cli.InitVerboseFlags(flag)
+	flag.BoolP(VerboseFlag, "v", false, "log messages at the debug level.")
 
 	flag.SortFlags = false
 }
@@ -123,13 +128,13 @@ func checkRegion(v *viper.Viper) error {
 		return fmt.Errorf("could not find regions for service %s", endpoints.GuarddutyServiceID)
 	}
 
-	r := v.GetString("aws-guardduty-region")
+	r := v.GetString(AWSGuardDutyRegionFlag)
 	if len(r) == 0 {
-		return errors.Wrap(&errInvalidRegion{Region: r}, fmt.Sprintf("%s is invalid", "aws-guardduty-region"))
+		return errors.Wrap(&errInvalidRegion{Region: r}, fmt.Sprintf("%s is invalid", AWSGuardDutyRegionFlag))
 	}
 
 	if _, ok := regions[r]; !ok {
-		return errors.Wrap(&errInvalidRegion{Region: r}, fmt.Sprintf("%s is invalid", "aws-guardduty-region"))
+		return errors.Wrap(&errInvalidRegion{Region: r}, fmt.Sprintf("%s is invalid", AWSGuardDutyRegionFlag))
 	}
 
 	return nil
@@ -149,10 +154,6 @@ func checkOutput(v *viper.Viper) error {
 
 func checkConfig(v *viper.Viper) error {
 
-	if err := cli.CheckVault(v); err != nil {
-		return err
-	}
-
 	err := checkRegion(v)
 	if err != nil {
 		return errors.Wrap(err, "Region check failed")
@@ -161,10 +162,6 @@ func checkConfig(v *viper.Viper) error {
 	err = checkOutput(v)
 	if err != nil {
 		return errors.Wrap(err, "Output check failed")
-	}
-
-	if err := cli.CheckVerbose(v); err != nil {
-		return err
 	}
 
 	return nil
@@ -257,7 +254,8 @@ func main() {
 	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	v.AutomaticEnv()
 
-	if !v.GetBool("verbose") {
+	verbose := v.GetBool(VerboseFlag)
+	if !verbose {
 		// Disable any logging that isn't attached to the logger unless using the verbose flag
 		log.SetOutput(ioutil.Discard)
 		log.SetFlags(0)
@@ -275,12 +273,24 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Get credentials from environment or AWS Vault
-	c, errorConfig := cli.GetAWSConfig(v, v.GetBool(cli.VerboseFlag))
-	if errorConfig != nil {
-		logger.Fatal(errors.Wrap(errorConfig, "error creating aws config").Error())
+	// Get credentials from environment
+	awsRegion := v.GetString(AWSRegionFlag)
+
+	awsConfig := &aws.Config{
+		Region: aws.String(awsRegion),
 	}
-	session, errorSession := awssession.NewSession(c)
+
+	// Attempt to retrieve AWS creds from envar, if not move to aws-vault
+	creds := credentials.NewEnvCredentials()
+	_, credsGetErr := creds.Get()
+	if credsGetErr != nil {
+		logger.Fatal(errors.Wrap(credsGetErr, "error creating aws config").Error())
+	}
+	// we have creds for envars return them
+	awsConfig.CredentialsChainVerboseErrors = aws.Bool(verbose)
+	awsConfig.Credentials = creds
+
+	session, errorSession := awssession.NewSession(awsConfig)
 	if errorSession != nil {
 		logger.Fatal(errors.Wrap(errorSession, "error creating aws session").Error())
 	}
