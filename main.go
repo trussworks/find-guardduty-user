@@ -386,7 +386,7 @@ func findGuardDutyUserFunction(cmd *cobra.Command, args []string) error {
 
 				// Not all events are from humans and in those cases we skip
 				if finding.Resource.AccessKeyDetails == nil {
-					if v.GetBool("verbose") {
+					if verbose {
 						logger.Println(fmt.Sprintf("\nSkipping Non User Finding ID: %s", aws.StringValue(finding.Id)))
 					}
 					continue
@@ -398,7 +398,10 @@ func findGuardDutyUserFunction(cmd *cobra.Command, args []string) error {
 					AccessKeyID: finding.Resource.AccessKeyDetails.AccessKeyId,
 					PrincipalID: finding.Resource.AccessKeyDetails.PrincipalId,
 				}
+
+				// If the Service is missing then these items can't be used
 				if finding.Service != nil {
+					fd.IPAddress = finding.Service.Action.AwsApiCallAction.RemoteIpDetails.IpAddressV4
 					fd.ServiceName = finding.Service.Action.AwsApiCallAction.ServiceName
 					fd.API = finding.Service.Action.AwsApiCallAction.Api
 					fd.City = finding.Service.Action.AwsApiCallAction.RemoteIpDetails.City.CityName
@@ -407,11 +410,6 @@ func findGuardDutyUserFunction(cmd *cobra.Command, args []string) error {
 
 				var roleArn *string
 				var username *string
-
-				// The IPv4 address is not always available if the service is missing
-				if finding.Service != nil {
-					fd.IPAddress = finding.Service.Action.AwsApiCallAction.RemoteIpDetails.IpAddressV4
-				}
 
 				// Get Assumed Role ARN and Username details based on Access Key or Principal IDs
 				if fd.AccessKeyID != nil && *fd.AccessKeyID != "" && *fd.AccessKeyID != "GeneratedFindingAccessKeyId" {
