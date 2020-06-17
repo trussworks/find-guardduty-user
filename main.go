@@ -101,14 +101,6 @@ func (e *errInvalidOutput) Error() string {
 	return fmt.Sprintf("invalid output %s", e.Output)
 }
 
-type errInvalidComparison struct {
-	Comparison string
-}
-
-func (e *errInvalidComparison) Error() string {
-	return fmt.Sprintf("invalid comparison %s", e.Comparison)
-}
-
 func initFlags(flag *pflag.FlagSet) {
 
 	// aws-vault
