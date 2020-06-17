@@ -354,11 +354,13 @@ func main() {
 			findings, err := serviceGuardDuty.GetFindings(&getFindingsInput)
 			if err != nil {
 				logger.Println(errors.Wrap(err, "Unable to retrieve Guard Duty findings"))
-				continue
 			}
 
 			// Walk through each finding
 			for _, finding := range findings.Findings {
+				if finding == nil {
+					continue
+				}
 
 				// Not all events are from humans and in those cases we skip
 				if finding.Resource.AccessKeyDetails == nil {
@@ -373,10 +375,12 @@ func main() {
 					CreatedAt:   finding.CreatedAt,
 					AccessKeyID: finding.Resource.AccessKeyDetails.AccessKeyId,
 					PrincipalID: finding.Resource.AccessKeyDetails.PrincipalId,
-					ServiceName: finding.Service.Action.AwsApiCallAction.ServiceName,
-					API:         finding.Service.Action.AwsApiCallAction.Api,
-					City:        finding.Service.Action.AwsApiCallAction.RemoteIpDetails.City.CityName,
-					Country:     finding.Service.Action.AwsApiCallAction.RemoteIpDetails.Country.CountryName,
+				}
+				if finding.Service != nil {
+					fd.ServiceName = finding.Service.Action.AwsApiCallAction.ServiceName
+					fd.API = finding.Service.Action.AwsApiCallAction.Api
+					fd.City = finding.Service.Action.AwsApiCallAction.RemoteIpDetails.City.CityName
+					fd.Country = finding.Service.Action.AwsApiCallAction.RemoteIpDetails.Country.CountryName
 				}
 
 				var roleArn *string
