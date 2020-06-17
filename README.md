@@ -16,12 +16,37 @@ TBD
 
 ## Usage
 
-TBD
+```sh
+Description
+    Easily identify IAM users that have triggered GuardDuty findings.
+
+Usage:
+  find-guardduty-user find [flags]
+
+Flags:
+      --aws-guardduty-region string   AWS region used inspecting guardduty (default "us-west-2")
+  -a, --archived                      Show archived findings instead of current findings
+  -o, --output string                 Whether to print output as 'text' or 'json' (default "json")
+  -v, --debug-logging                 log messages at the debug level.
+  -h, --help                          help for find
+```
 
 ## Examples
 
 Run the command like this:
 
 ```sh
-find-guardduty-user
+find-guardduty-user find
+```
+
+Review archived findings:
+
+```sh
+find-guardduty-user find -a
+```
+
+Look at the output in a TEXT format for easy reading:
+
+```sh
+find-guardduty-user find -o text
 ```

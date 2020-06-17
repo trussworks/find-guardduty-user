@@ -15,6 +15,7 @@ import (
 	awssession "github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudtrail"
 	"github.com/aws/aws-sdk-go/service/guardduty"
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -220,31 +221,63 @@ func GetUser(roleArn *string, serviceCloudTrail *cloudtrail.CloudTrail) (*string
 }
 
 func main() {
-
-	flag := pflag.CommandLine
-	// Create the logger
-	// Remove the prefix and any datetime data
-	logger := log.New(os.Stdout, "", log.LstdFlags)
-	initFlags(flag)
-	parseErr := flag.Parse(os.Args[1:])
-	if parseErr != nil {
-		logger.Println(parseErr)
-		logger.Println("flag parsing failed")
-		flag.PrintDefaults()
-		os.Exit(1)
+	root := cobra.Command{
+		Use:   "find-guardduty-user [flags]",
+		Short: "Find Users that triggered GuardDuty findings",
+		Long:  "Find Users that triggered GuardDuty findings",
 	}
+
+	completionCommand := &cobra.Command{
+		Use:   "completion",
+		Short: "Generates bash completion scripts",
+		Long:  "To install completion scripts run:\nfind-guardduty-user completion > /usr/local/etc/bash_completion.d/find-guardduty-user",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return root.GenBashCompletion(os.Stdout)
+		},
+	}
+	root.AddCommand(completionCommand)
+
+	findGuardDutyUserCommand := &cobra.Command{
+		Use:                   "find [flags]",
+		DisableFlagsInUseLine: true,
+		Short:                 "Find Users that triggered GuardDuty findings",
+		Long: `Description
+    Easily identify IAM users that have triggered GuardDuty findings.`,
+		RunE: findGuardDutyUserFunction,
+	}
+	initFlags(findGuardDutyUserCommand.Flags())
+	root.AddCommand(findGuardDutyUserCommand)
+
+	if err := root.Execute(); err != nil {
+		panic(err)
+	}
+}
+
+func findGuardDutyUserFunction(cmd *cobra.Command, args []string) error {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println(r)
+		}
+	}()
+
+	err := cmd.ParseFlags(args)
+	if err != nil {
+		return err
+	}
+
+	flag := cmd.Flags()
 
 	v := viper.New()
 	bindErr := v.BindPFlags(flag)
 	if bindErr != nil {
-		logger.Println(bindErr)
-		logger.Println("flag binding failed")
-		flag.PrintDefaults()
-		os.Exit(1)
+		return bindErr
 	}
-
 	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	v.AutomaticEnv()
+
+	// Create the logger
+	// Remove the prefix and any datetime data
+	logger := log.New(os.Stdout, "", log.LstdFlags)
 
 	verbose := v.GetBool(VerboseFlag)
 	if !verbose {
@@ -257,12 +290,9 @@ func main() {
 	}
 
 	// Check the config and exit with usage details if there is a problem
-	err := checkConfig(v)
-	if err != nil {
-		logger.Println(err)
-		logger.Println("Usage of find-guardduty-user:")
-		flag.PrintDefaults()
-		os.Exit(1)
+	checkConfigErr := checkConfig(v)
+	if checkConfigErr != nil {
+		return checkConfigErr
 	}
 
 	// Get credentials from environment
@@ -437,4 +467,5 @@ func main() {
 			}
 		}
 	}
+	return nil
 }
