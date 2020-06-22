@@ -1,4 +1,5 @@
-VERSION = v0.0.1
+# goreleaser removes the `v` prefix when building and this does too
+VERSION = 0.0.1
 
 ifdef CIRCLECI
 	UNAME_S := $(shell uname -s)
