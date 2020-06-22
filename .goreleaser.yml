@@ -27,7 +27,6 @@ dockers:
       - find-guardduty-user
     image_templates:
       - "trussworks/find-guardduty-user:{{ .Tag }}"
-    skip_push: true
 archives:
   -
     replacements:
