@@ -15,5 +15,10 @@ bin/find-guardduty-user: ## Build find-guardduty-user
 .PHONY: clean
 clean: ## Clean all generated files
 	rm -rf ./bin
+	rm -rf ./dist
+
+.PHONY: goreleaser_test
+goreleaser_test: ## Goreleaser test configuration
+	goreleaser --snapshot --skip-publish --rm-dist
 
 default: help
