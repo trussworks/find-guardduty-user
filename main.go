@@ -92,6 +92,9 @@ func (e *errInvalidOutput) Error() string {
 }
 
 const (
+	// Version is the published version of the utility
+	Version = "v0.0.1"
+
 	// AWSGuardDutyRegionFlag is the AWS GuardDuty Region Flag
 	AWSGuardDutyRegionFlag = "aws-guardduty-region"
 	// ArchivedFlag is the Archive Flag
@@ -248,9 +251,49 @@ func main() {
 	initFlags(findGuardDutyUserCommand.Flags())
 	root.AddCommand(findGuardDutyUserCommand)
 
+	findGuardDutyVersionCommand := &cobra.Command{
+		Use:                   "version",
+		DisableFlagsInUseLine: true,
+		Short:                 "Print the version",
+		Long:                  "Print the version",
+		RunE:                  findGuardDutyVersionFunction,
+	}
+	root.AddCommand(findGuardDutyVersionCommand)
+
 	if err := root.Execute(); err != nil {
 		panic(err)
 	}
+}
+
+func findGuardDutyVersionFunction(cmd *cobra.Command, args []string) error {
+	err := cmd.ParseFlags(args)
+	if err != nil {
+		return err
+	}
+
+	flag := cmd.Flags()
+
+	v := viper.New()
+	bindErr := v.BindPFlags(flag)
+	if bindErr != nil {
+		return bindErr
+	}
+	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+	v.AutomaticEnv()
+
+	// Create the logger
+	// Remove the prefix and any datetime data
+	logger := log.New(os.Stdout, "", log.LstdFlags)
+
+	// Disable all logging that isn't attached to the logger
+	log.SetOutput(ioutil.Discard)
+	log.SetFlags(0)
+
+	// Remove the flags for the logger
+	logger.SetFlags(0)
+	logger.Println(Version)
+
+	return nil
 }
 
 func findGuardDutyUserFunction(cmd *cobra.Command, args []string) error {
