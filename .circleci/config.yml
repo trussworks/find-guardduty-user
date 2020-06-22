@@ -19,8 +19,47 @@ jobs:
           key: pre-commit-dot-cache-{{ checksum ".pre-commit-config.yaml" }}
           paths:
             - ~/.cache/pre-commit
+  build:
+    docker:
+      - image: *circleci-docker-primary
+    steps:
+      - run: make bin/find-guardduty-user
+      - persist_to_workspace:
+          root: ~/bin
+          paths:
+            - find-guardduty-user
+  publish-github-release:
+    docker:
+      - image: cibuilds/github:0.10
+    steps:
+      - attach_workspace:
+          at: ~/bin
+      - run:
+          name: "Publish Release on GitHub"
+          command: |
+            VERSION=$(bin/find-guardduty-user version)
+            echo ${VERSION}
+            # TODO: echo used until ready to publish
+            echo ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} ./bin/
+
 workflows:
   version: 2.1
-  validate:
+  main:
     jobs:
       - validate
+      - build:
+          requires:
+            - validate
+          filters:
+            tags:
+              only: cg_release_pipeline
+              # only: /^\d+\.\d+\.\d+$/
+      - publish-github-release:
+          requires:
+            - build
+          filters:
+            # branches:
+            #   ignore: /.*/
+            tags:
+              only: cg_release_pipeline
+              # only: /^\d+\.\d+\.\d+$/
