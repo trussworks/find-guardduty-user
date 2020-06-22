@@ -26,7 +26,7 @@ jobs:
       - checkout
       - run: make bin/find-guardduty-user
       - persist_to_workspace:
-          root: ~/bin
+          root: /home/circleci/project/bin
           paths:
             - find-guardduty-user
   publish-github-release:
@@ -34,7 +34,7 @@ jobs:
       - image: cibuilds/github:0.10
     steps:
       - attach_workspace:
-          at: ~/bin
+          at: /home/circleci/project/bin
       - run:
           name: "Publish Release on GitHub"
           command: |
