@@ -20,3 +20,12 @@ repos:
     rev: v0.23.1
     hooks:
       - id: markdownlint
+
+  - repo: local
+    hooks:
+      - id: goreleaser-check
+        name: Validate goreleaser config  yaml
+        entry: goreleaser check
+        language: system
+        files: '.goreleaser.yml'
+        pass_filenames: false

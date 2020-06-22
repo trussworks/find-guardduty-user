@@ -1,4 +1,5 @@
-VERSION = v0.0.1
+# goreleaser removes the `v` prefix when building and this does too
+VERSION = 0.0.1
 
 ifdef CIRCLECI
 	UNAME_S := $(shell uname -s)
@@ -17,5 +18,18 @@ bin/find-guardduty-user: ## Build find-guardduty-user
 .PHONY: clean
 clean: ## Clean all generated files
 	rm -rf ./bin
+	rm -rf ./dist
+
+.PHONY: goreleaser_check
+goreleaser_check: ## Goreleaser check configuration
+	goreleaser check
+
+.PHONY: goreleaser_build
+goreleaser_build: ## Goreleaser build configuration
+	goreleaser build --snapshot --rm-dist
+
+.PHONY: goreleaser_test
+goreleaser_test: ## Goreleaser test configuration
+	goreleaser --snapshot --skip-publish --rm-dist
 
 default: help
