@@ -21,8 +21,9 @@ jobs:
             - ~/.cache/pre-commit
   build:
     docker:
-      - image: *circleci-docker-primary
+      - image: circleci/golang:1.14
     steps:
+      - checkout
       - run: make bin/find-guardduty-user
       - persist_to_workspace:
           root: ~/bin
