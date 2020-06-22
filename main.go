@@ -91,8 +91,8 @@ func (e *errInvalidOutput) Error() string {
 	return fmt.Sprintf("invalid output %s", e.Output)
 }
 
-// Version is the published version of the utility
-var Version string
+// version is the published version of the utility
+var version string
 
 const (
 	// AWSGuardDutyRegionFlag is the AWS GuardDuty Region Flag
@@ -266,11 +266,11 @@ func main() {
 }
 
 func findGuardDutyVersionFunction(cmd *cobra.Command, args []string) error {
-	if len(Version) == 0 {
+	if len(version) == 0 {
 		fmt.Println("development")
 		return nil
 	}
-	fmt.Println(Version)
+	fmt.Println(version)
 	return nil
 }
 
