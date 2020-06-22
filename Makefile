@@ -12,8 +12,13 @@ help:  ## Print the help documentation
 bin/find-guardduty-user: ## Build find-guardduty-user
 	go build -ldflags "$(LDFLAGS)" -o bin/find-guardduty-user .
 
+.PHONY: release
+release: ## Build the project artifacts for release
+	docker run -v "${PWD}:/home/circleci/project" -w "/home/circleci/project" cibuilds/github:0.10 ./scripts/release.sh
+
 .PHONY: clean
 clean: ## Clean all generated files
+	rm -rf ./artifacts
 	rm -rf ./bin
 
 default: help
