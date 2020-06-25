@@ -12,7 +12,12 @@ person that triggered the event.
 
 ## Installation
 
-TBD
+For OSX Homebrew:
+
+```sh
+brew tap trussworks/tap
+brew install find-guardduty-user
+```
 
 ## Usage
 
