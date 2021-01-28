@@ -95,6 +95,8 @@ func (e *errInvalidOutput) Error() string {
 var version string
 
 const (
+	// AWSGuardDutyPartitionFlag is the AWS Guard Duty Partition Flag
+	AWSGuardDutyPartitionFlag = "aws-guardduty-partition"
 	// AWSGuardDutyRegionFlag is the AWS GuardDuty Region Flag
 	AWSGuardDutyRegionFlag = "aws-guardduty-region"
 	// ArchivedFlag is the Archive Flag
@@ -107,7 +109,8 @@ const (
 
 func initFlags(flag *pflag.FlagSet) {
 
-	flag.String(AWSGuardDutyRegionFlag, endpoints.UsWest2RegionID, "AWS region used inspecting guardduty")
+	flag.StringP(AWSGuardDutyPartitionFlag, "p", "aws", "AWS partition used for inspecting guardduty")
+	flag.StringP(AWSGuardDutyRegionFlag, "r", "us-west-2", "AWS region used for inspecting guardduty")
 	flag.BoolP(ArchivedFlag, "a", false, "Show archived findings instead of current findings")
 	flag.StringP(OutputFlag, "o", "json", "Whether to print output as 'text' or 'json'")
 
