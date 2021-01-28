@@ -75,6 +75,14 @@ City, Country:      %s, %s`
 	))
 }
 
+type errInvalidPartition struct {
+	Partition string
+}
+
+func (e *errInvalidPartition) Error() string {
+	return fmt.Sprintf("invalid partition %s", e.Partition)
+}
+
 type errInvalidRegion struct {
 	Region string
 }
@@ -95,6 +103,8 @@ func (e *errInvalidOutput) Error() string {
 var version string
 
 const (
+	// AWSGuardDutyPartitionFlag is the AWS Guard Duty Partition Flag
+	AWSGuardDutyPartitionFlag = "aws-guardduty-partition"
 	// AWSGuardDutyRegionFlag is the AWS GuardDuty Region Flag
 	AWSGuardDutyRegionFlag = "aws-guardduty-region"
 	// ArchivedFlag is the Archive Flag
@@ -107,9 +117,10 @@ const (
 
 func initFlags(flag *pflag.FlagSet) {
 
-	flag.String(AWSGuardDutyRegionFlag, endpoints.UsWest2RegionID, "AWS region used inspecting guardduty")
+	flag.StringP(AWSGuardDutyPartitionFlag, "p", "aws", "AWS partition ('aws' or 'aws-us-gov') used for inspecting guardduty")
+	flag.StringP(AWSGuardDutyRegionFlag, "r", "us-west-2", "AWS region used for inspecting guardduty")
 	flag.BoolP(ArchivedFlag, "a", false, "Show archived findings instead of current findings")
-	flag.StringP(OutputFlag, "o", "json", "Whether to print output as 'text' or 'json'")
+	flag.StringP(OutputFlag, "o", "text", "Whether to print output as 'text' or 'json'")
 
 	// Verbose
 	flag.BoolP(VerboseFlag, "v", false, "log messages at the debug level.")
@@ -119,9 +130,14 @@ func initFlags(flag *pflag.FlagSet) {
 
 func checkRegion(v *viper.Viper) error {
 
-	regions, ok := endpoints.RegionsForService(endpoints.DefaultPartitions(), endpoints.AwsPartitionID, endpoints.GuarddutyServiceID)
+	regions, ok := endpoints.RegionsForService(endpoints.DefaultPartitions(), v.GetString(AWSGuardDutyPartitionFlag), endpoints.GuarddutyServiceID)
 	if !ok {
 		return fmt.Errorf("could not find regions for service %s", endpoints.GuarddutyServiceID)
+	}
+
+	p := v.GetString(AWSGuardDutyPartitionFlag)
+	if len(p) == 0 {
+		return fmt.Errorf("%s is invalid: %w", AWSGuardDutyPartitionFlag, &errInvalidPartition{Partition: p})
 	}
 
 	r := v.GetString(AWSGuardDutyRegionFlag)
