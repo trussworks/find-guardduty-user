@@ -117,10 +117,10 @@ const (
 
 func initFlags(flag *pflag.FlagSet) {
 
-	flag.StringP(AWSGuardDutyPartitionFlag, "p", "aws", "AWS partition used for inspecting guardduty")
+	flag.StringP(AWSGuardDutyPartitionFlag, "p", "aws", "AWS partition ('aws' or 'aws-us-gov') used for inspecting guardduty")
 	flag.StringP(AWSGuardDutyRegionFlag, "r", "us-west-2", "AWS region used for inspecting guardduty")
 	flag.BoolP(ArchivedFlag, "a", false, "Show archived findings instead of current findings")
-	flag.StringP(OutputFlag, "o", "json", "Whether to print output as 'text' or 'json'")
+	flag.StringP(OutputFlag, "o", "text", "Whether to print output as 'text' or 'json'")
 
 	// Verbose
 	flag.BoolP(VerboseFlag, "v", false, "log messages at the debug level.")

@@ -29,9 +29,10 @@ Usage:
   find-guardduty-user find [flags]
 
 Flags:
-      --aws-guardduty-region string   AWS region used inspecting guardduty (default "us-west-2")
+  -p    --aws-guardduty-partition string AWS partition ('aws' or 'aws-us-gov') used for inspecting guardduty (default "aws")
+  -r    --aws-guardduty-region string   AWS region used for inspecting guardduty (default "us-west-2")
   -a, --archived                      Show archived findings instead of current findings
-  -o, --output string                 Whether to print output as 'text' or 'json' (default "json")
+  -o, --output string                 Whether to print output as 'text' or 'json' (default "text")
   -v, --debug-logging                 log messages at the debug level.
   -h, --help                          help for find
 ```
@@ -44,14 +45,20 @@ Run the command like this:
 find-guardduty-user find
 ```
 
+Run the command in GovCloud like this:
+
+```sh
+find-guardduty-user find -p aws-us-gov -r us-gov-west-1
+```
+
 Review archived findings:
 
 ```sh
 find-guardduty-user find -a
 ```
 
-Look at the output in a TEXT format for easy reading:
+Look at the output in JSON format:
 
 ```sh
-find-guardduty-user find -o text
+find-guardduty-user find -o json
 ```
