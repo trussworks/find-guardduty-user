@@ -75,6 +75,14 @@ City, Country:      %s, %s`
 	))
 }
 
+type errInvalidPartition struct {
+	Partition string
+}
+
+func (e *errInvalidPartition) Error() string {
+	return fmt.Sprintf("invalid partition %s", e.Partition)
+}
+
 type errInvalidRegion struct {
 	Region string
 }
@@ -122,9 +130,14 @@ func initFlags(flag *pflag.FlagSet) {
 
 func checkRegion(v *viper.Viper) error {
 
-	regions, ok := endpoints.RegionsForService(endpoints.DefaultPartitions(), endpoints.AwsPartitionID, endpoints.GuarddutyServiceID)
+	regions, ok := endpoints.RegionsForService(endpoints.DefaultPartitions(), v.GetString(AWSGuardDutyPartitionFlag), endpoints.GuarddutyServiceID)
 	if !ok {
 		return fmt.Errorf("could not find regions for service %s", endpoints.GuarddutyServiceID)
+	}
+
+	p := v.GetString(AWSGuardDutyPartitionFlag)
+	if len(p) == 0 {
+		return fmt.Errorf("%s is invalid: %w", AWSGuardDutyPartitionFlag, &errInvalidPartition{Partition: p})
 	}
 
 	r := v.GetString(AWSGuardDutyRegionFlag)
