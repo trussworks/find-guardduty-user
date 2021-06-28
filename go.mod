@@ -3,7 +3,7 @@ module github.com/trussworks/find-guardduty-user
 go 1.16
 
 require (
-	github.com/aws/aws-sdk-go v1.38.64
+	github.com/aws/aws-sdk-go v1.38.68
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
