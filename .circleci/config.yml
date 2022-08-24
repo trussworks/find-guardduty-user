@@ -32,9 +32,4 @@ workflows:
               ignore: /^.*/
             tags:
               only: /^v[0-9]+(\.[0-9]+)*(-.*)*/
-  validate:
-    jobs:
-      - validate:
-          context:
-            - org-global
   version: 2.1
