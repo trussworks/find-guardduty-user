@@ -4,13 +4,10 @@
   ],
   "packageRules": [
     {
-      "automerge": true,
-      "matchUpdateTypes": [
-        "patch",
-        "pin",
-        "digest",
-        "minor"
-      ]
+      "matchDatasources": [
+        "docker"
+      ],
+      "versioning": "semver"
     },
     {
       "description": "Tag the waddlers Github Team for major updates",
@@ -25,13 +22,11 @@
       "automerge": true,
       "description": "Group minor and patch updates into a single PR",
       "groupName": "dependencies",
-      "managers": [
-        "terraform",
-        "pre-commit"
-      ],
       "matchUpdateTypes": [
         "minor",
-        "patch"
+        "patch",
+        "pin",
+        "digest"
       ]
     }
   ],
