@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/golangci/golangci-lint
-    rev: v1.53.2
+    rev: v1.53.3
     hooks:
       - id: golangci-lint
 
@@ -20,7 +20,7 @@ repos:
       - id: mixed-line-ending
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.34.0
+    rev: v0.35.0
     hooks:
       - id: markdownlint
 
