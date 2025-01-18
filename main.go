@@ -130,9 +130,9 @@ func initFlags(flag *pflag.FlagSet) {
 
 func checkRegion(v *viper.Viper) error {
 
-	regions, ok := endpoints.RegionsForService(endpoints.DefaultPartitions(), v.GetString(AWSGuardDutyPartitionFlag), endpoints.GuarddutyServiceID)
+	regions, ok := endpoints.RegionsForService(endpoints.DefaultPartitions(), v.GetString(AWSGuardDutyPartitionFlag), guardduty.EndpointsID)
 	if !ok {
-		return fmt.Errorf("could not find regions for service %s", endpoints.GuarddutyServiceID)
+		return fmt.Errorf("could not find regions for service %s", guardduty.EndpointsID)
 	}
 
 	p := v.GetString(AWSGuardDutyPartitionFlag)
