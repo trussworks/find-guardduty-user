@@ -14,7 +14,7 @@ builds:
     main: main.go
 brews:
   - description: "find-guardduty-user is used to search CloudTrial to find users that triggered GuardDuty alerts."
-    tap:
+    repository:
       owner: trussworks
       name: homebrew-tap
     homepage: "https://github.com/trussworks/find-guardduty-user"
@@ -40,7 +40,7 @@ checksum:
   name_template: "checksums.txt"
   algorithm: sha256
 snapshot:
-  name_template: "{{ .Tag }}-next"
+  version_template: "{{ .Tag }}-next"
 changelog:
   sort: asc
   filters:

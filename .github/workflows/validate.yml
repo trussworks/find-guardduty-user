@@ -10,4 +10,6 @@ on:
 
 jobs:
   validate:
-    uses: trussworks/shared-actions/.github/workflows/validate-go.yml@main
+    uses: trussworks/shared-actions/.github/workflows/validate-go.yml@aae5a2c52d67c27a1ab11c348c4460ae09f21375 # v0.0.6
+    with:
+      go-version: "1.23.5"
